@@ -209,7 +209,7 @@ class VisualSudokuBoard(GCompound):
             self.suggest_solution([[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]])
             self.set_background_color(CELL_BAD_COLOR)
         else:
-            self.suggest_solution(solution.matrix)
+            self.suggest_solution(solution.as_matrix())
             self.set_background_color(CELL_GOOD_COLOR)
             
     def set_background_color(self, color):

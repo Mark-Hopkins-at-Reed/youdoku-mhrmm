@@ -44,23 +44,115 @@ def sentence(s):
     clauses = s.split('\n')
     return Cnf([c(clause.strip()) for clause in clauses])
 
+
 class Literal:
-    """Part 3, Question 1"""
-    pass
-     
-class Clause:
-    """
-    Part 3, Question 2
-    Part 4, Question 2
+    def __init__(self, symbol, polarity = True):
+        self.symbol = symbol
+        self.polarity = polarity
     
-    """
-    pass
+    def __eq__(self, other):
+        return self.symbol == other.symbol and self.polarity == other.polarity
+    
+    def __lt__(self, other):
+        if self.symbol < other.symbol:
+            return True
+        elif other.symbol < self.symbol:
+            return False
+        else:
+            return self.polarity < other.polarity
+
+    def __hash__(self):
+        return hash(self.symbol) + hash(self.polarity)
+    
+    def __str__(self):
+        result = ''
+        if not self.polarity:
+            result = '!'
+        return result + self.symbol
+ 
+class Clause:
+    def __init__(self, literals):
+        self.literals = literals
+        self.literal_values = dict()
+        for lit in self.literals:
+            self.literal_values[lit.symbol] = lit.polarity
+        self.syms = set([l.symbol for l in self.literals])
+        self.num_literals  = len(literals)
+
+    def __len__(self):
+        return self.num_literals
+
+    def __bool__(self):
+        return len(self.literals) > 0
+
+    def __eq__(self, other):
+        return set(self.literals) == set(other.literals)
+
+    def __lt__(self, other):
+        return str(self) < str(other)
+
+    def __hash__(self):
+        return hash(tuple(sorted([str(l) for l in self.literals])))
+
+    def __str__(self):
+        if len(self.literals) == 0:
+            return 'FALSE'
+        else:
+            ordered = sorted(self.literals)
+            return ' || '.join([str(l) for l in ordered])
+        
+    def __contains__(self, sym):
+        return sym in self.literal_values
+
+    def __getitem__(self, sym):
+        return self.literal_values[sym]
+    
+    def __or__(self, other):
+        common_symbols = self.literal_values.keys() & other.literal_values.keys()
+        for sym in common_symbols:
+            if self.literal_values[sym] != other.literal_values[sym]:
+                return None
+        return Clause(list(set(self.literals + other.literals)))
+
+    def symbols(self):
+        return self.syms
+
+    def remove(self, sym):
+        new_literals = [lit for lit in self.literals if lit.symbol != sym]        
+        return Clause(new_literals)
+
 
 class Cnf:
-    """
-    Part 3, Question 3
-    Part 8, Question 2
-    Part 8, Question 3
+    def __init__(self, clauses):
+        self.clauses = set(clauses)
+
+    def symbols(self):
+        syms = set([])
+        for clause in self.clauses:
+            syms = syms | clause.symbols()
+        return syms
     
-    """
-    pass
+    def __str__(self):
+        clause_strs = sorted([str(c) for c in self.clauses])     
+        return '\n'.join(clause_strs)
+        
+    ## new
+    def check_model(self, term):
+        def check_against_clause(clause):
+            for symbol in clause.symbols():
+                if ((not term[symbol] and not clause[symbol]) or
+                    (term[symbol] and clause[symbol])):
+                    return True                
+            return False
+        for clause in self.clauses:
+            if not check_against_clause(clause):
+                return False
+        return True   
+
+    ## new
+    def implicit_model(self):
+        unit_clauses = [c.literals[0] for c in self.clauses if len(c) == 1]
+        model = {c.symbol: c.polarity for c in unit_clauses}
+        return model
+    
+
