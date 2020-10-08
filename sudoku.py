@@ -3,10 +3,12 @@ import cnf
 import copy
 from search import dpll
 
+
 def irange(i, j):
     return range(i, j+1)
 
-def lit(d, i, j, polarity = True):
+
+def lit(d, i, j, polarity=True):
     """
     Creates a literal indicating whether cell (i, j) contains digit d.
     
@@ -16,15 +18,19 @@ def lit(d, i, j, polarity = True):
         literal = '!{}'.format(literal)
     return literal
 
+
 class SudokuBoard:
     
     def __init__(self, matrix):
         self.matrix = matrix
         self.box_width = int(math.sqrt(len(self.matrix)))
-        err = "Improper dimensions for a Sudoku board!"
+        err = 'Improper dimensions for a Sudoku board!'
         assert self.box_width == math.sqrt(len(self.matrix)), err
         self.generic_clauses = list(set(self._generate_generic_clauses()))
-        
+
+    def as_matrix(self):
+        return self.matrix
+
     def _generate_generic_clauses(self):
         num_symbols = self.box_width * self.box_width
         clause_strs = []
@@ -57,6 +63,7 @@ class SudokuBoard:
                                   for j in range((b-1) * box_width, b * box_width)])
         return [box_cells(a, b, self.box_width) for a in irange(1, self.box_width)
                                                  for b in irange(1, self.box_width)]
+
     def zones(self):
         return self.rows() + self.columns() + self.boxes()
     
@@ -77,7 +84,7 @@ class SudokuBoard:
     def solvable(self, solver):
         return solver(self.cnf())
     
-    ## new
+    # new
     def solve(self):
         def interpret_lit(l):
             negate = (l[0] == "!")
@@ -87,6 +94,11 @@ class SudokuBoard:
                 l = l[1:]
             d, i, j = l.split("_")
             return d, i, j, negate
+        if len(self.contents()) == 0: # short cut if nothing has been filled in
+            return SudokuBoard([[4, 1, 2, 3],
+                                [2, 3, 4, 1],
+                                [3, 4, 1, 2],
+                                [1, 2, 3, 4]])
         model = dpll(self.cnf())
         if model is None:
             return None
@@ -106,6 +118,7 @@ def at_least_clause(cells, d):
     literals = [lit(d, i, j) for (i, j) in sorted(cells)]
     return ' || '.join(literals)  
 
+
 def at_most_clauses(cells, d):
     """
     Encodes: "The following cells have at most 1 of digit d."
@@ -120,6 +133,7 @@ def at_most_clauses(cells, d):
         clauses.append('{} || {}'.format(lit(d, cell1[0], cell1[1], polarity=False), 
                                          lit(d, cell2[0], cell2[1], polarity=False)))        
     return clauses
+
 
 def exactly_one_clauses(cells, d):
     """
